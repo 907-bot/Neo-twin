@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NeoTwin — 3D Digital Twin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; background: #0D0D0D; font-family: 'Rajdhani', sans-serif; }
+    #canvas { width: 100vw; height: 100vh; display: block; }
+    
+    /* Loading Screen */
+    #loading {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: #0D0D0D; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; z-index: 2000;
+    }
+    #loading h1 { color: #F7C131; font-size: 48px; letter-spacing: 4px; margin-bottom: 20px; }
+    #loading .bar { width: 400px; height: 6px; background: #1a1a1a; border-radius: 3px; }
+    #loading .fill { height: 100%; background: #F7C131; border-radius: 3px; transition: width 0.3s; }
+    #loading p { color: #888888; margin-top: 16px; font-size: 16px; }
+    
+    /* Upload Screen */
+    #upload-screen {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(135deg, #0D0D0D 0%, #111418 100%);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1500; overflow-y: auto;
+    }
+    #upload-screen.hidden { display: none; }
+    .upload-container {
+      max-width: 900px; width: 90%; padding: 40px;
+    }
+    .upload-header {
+      text-align: center; margin-bottom: 40px;
+    }
+    .upload-header h1 {
+      color: #F7C131; font-size: 42px; letter-spacing: 3px; margin-bottom: 12px;
+    }
+    .upload-header p {
+      color: #E8E0CC; font-size: 18px; line-height: 1.6;
+    }
+    
+    /* Upload Options */
+    .upload-options {
+      display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 30px;
+    }
+    .upload-card {
+      background: rgba(17, 20, 24, 0.9);
+      border: 1px solid rgba(247, 193, 49, 0.35);
+      border-radius: 8px; padding: 30px; cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .upload-card:hover {
+      border-color: #F7C131;
+      box-shadow: 0 0 20px rgba(247, 193, 49, 0.2);
+      transform: translateY(-2px);
+    }
+    .upload-card.primary {
+      border-color: #F7C131;
+      background: rgba(247, 193, 49, 0.05);
+    }
+    .upload-card .badge {
+      display: inline-block; background: #F7C131; color: #0D0D0D;
+      padding: 4px 12px; border-radius: 4px; font-size: 12px;
+      font-weight: 700; letter-spacing: 1px; margin-bottom: 12px;
+    }
+    .upload-card h3 {
+      color: #E8E0CC; font-size: 24px; margin-bottom: 12px;
+    }
+    .upload-card p {
+      color: #888888; font-size: 14px; line-height: 1.6;
+    }
+    .upload-card .icon {
+      font-size: 48px; margin-bottom: 16px;
+    }
+    
+    /* Video Upload Area */
+    #video-upload-area {
+      border: 2px dashed rgba(247, 193, 49, 0.5);
+      border-radius: 8px; padding: 40px; text-align: center;
+      margin-bottom: 20px; display: none;
+    }
+    #video-upload-area.active { display: block; }
+    #video-upload-area.dragover {
+      border-color: #F7C131;
+      background: rgba(247, 193, 49, 0.1);
+    }
+    #video-upload-area p {
+      color: #E8E0CC; font-size: 16px; margin-bottom: 12px;
+    }
+    #video-upload-area .hint {
+      color: #888888; font-size: 14px;
+    }
+    
+    /* Capture Instructions */
+    .instructions-panel {
+      background: rgba(17, 20, 24, 0.9);
+      border: 1px solid rgba(0, 207, 255, 0.35);
+      border-radius: 8px; padding: 30px; margin-top: 30px;
+    }
+    .instructions-panel h3 {
+      color: #00CFFF; font-size: 20px; margin-bottom: 20px;
+      letter-spacing: 2px;
+    }
+    .instruction-steps {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 20px; margin-bottom: 20px;
+    }
+    .instruction-step {
+      text-align: center;
+    }
+    .instruction-step .step-num {
+      width: 40px; height: 40px; background: #00CFFF;
+      color: #0D0D0D; border-radius: 50%; display: flex;
+      align-items: center; justify-content: center;
+      font-weight: 700; font-size: 18px; margin: 0 auto 12px;
+    }
+    .instruction-step h4 {
+      color: #E8E0CC; font-size: 14px; margin-bottom: 8px;
+    }
+    .instruction-step p {
+      color: #888888; font-size: 12px; line-height: 1.5;
+    }
+    .do-dont {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    }
+    .do-list, .dont-list {
+      padding: 20px; border-radius: 6px;
+    }
+    .do-list {
+      background: rgba(57, 255, 20, 0.05);
+      border: 1px solid rgba(57, 255, 20, 0.3);
+    }
+    .dont-list {
+      background: rgba(255, 59, 59, 0.05);
+      border: 1px solid rgba(255, 59, 59, 0.3);
+    }
+    .do-list h4 { color: #39FF14; margin-bottom: 12px; }
+    .dont-list h4 { color: #FF3B3B; margin-bottom: 12px; }
+    .do-list li, .dont-list li {
+      color: #E8E0CC; font-size: 13px; margin-bottom: 8px;
+      list-style: none;
+    }
+    .do-list li::before { content: "✓ "; color: #39FF14; }
+    .dont-list li::before { content: "✗ "; color: #FF3B3B; }
+    
+    /* Progress Bar */
+    #upload-progress {
+      display: none; margin-top: 20px;
+    }
+    #upload-progress.active { display: block; }
+    .progress-bar {
+      width: 100%; height: 8px; background: #1a1a1a;
+      border-radius: 4px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: #F7C131; width: 0%;
+      transition: width 0.3s ease;
+    }
+    #upload-status {
+      color: #E8E0CC; font-size: 14px; margin-top: 12px;
+      text-align: center;
+    }
+    
+    /* Validation Warnings */
+    #validation-warnings {
+      display: none; margin-top: 20px;
+    }
+    #validation-warnings.active { display: block; }
+    .warning-box {
+      background: rgba(255, 59, 59, 0.1);
+      border: 1px solid rgba(255, 59, 59, 0.5);
+      border-radius: 6px; padding: 16px; margin-bottom: 12px;
+    }
+    .warning-box p {
+      color: #FF3B3B; font-size: 14px;
+    }
+    .info-box {
+      background: rgba(0, 207, 255, 0.1);
+      border: 1px solid rgba(0, 207, 255, 0.5);
+      border-radius: 6px; padding: 16px;
+    }
+    .info-box p {
+      color: #00CFFF; font-size: 14px;
+    }
+    
+    /* HUD Overlay */
+    #hud { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; display: none; }
+    #hud.active { display: block; }
+    #hud > * { pointer-events: auto; }
+    .panel {
+      background: rgba(17, 20, 24, 0.9);
+      border: 0.5px solid rgba(247, 193, 49, 0.35);
+      border-radius: 4px; padding: 12px;
+    }
+    #search-bar { position: absolute; top: 20px; right: 20px; width: 320px; }
+    #search-bar input {
+      width: 100%; padding: 10px; background: rgba(13, 13, 13, 0.8);
+      border: 1px solid rgba(247, 193, 49, 0.5); border-radius: 4px;
+      color: #E8E0CC; font-family: 'Rajdhani', sans-serif; font-size: 14px;
+      letter-spacing: 1px;
+    }
+    #search-bar input:focus { outline: none; border-color: #F7C131; box-shadow: 0 0 8px rgba(247, 193, 49, 0.4); }
+    #narration-panel {
+      position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+      max-width: 600px; text-align: center; display: none;
+    }
+    #narration-panel p { color: #E8E0CC; font-size: 16px; line-height: 1.6; }
+    #stats-bar {
+      position: absolute; bottom: 0; left: 0; width: 100%; height: 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; background: rgba(17, 20, 24, 0.95);
+      border-top: 0.5px solid rgba(247, 193, 49, 0.35);
+    }
+    #stats-bar span { color: #888888; font-family: 'Share Tech Mono', monospace; font-size: 12px; letter-spacing: 2px; }
+    #stats-bar .accent { color: #F7C131; }
+    #minimap {
+      position: absolute; top: 20px; right: 360px; width: 120px; height: 120px;
+      border-radius: 50%; overflow: hidden;
+    }
+    #notification {
+      position: absolute; bottom: 50px; right: 20px; width: 220px;
+      transform: translateX(300px); transition: transform 0.3s ease;
+    }
+    #notification.show { transform: translateX(0); }
+    #notification p { color: #39FF14; font-size: 13px; }
+    
+    /* Buttons */
+    .btn {
+      padding: 12px 24px; border: none; border-radius: 4px;
+      font-family: 'Rajdhani', sans-serif; font-size: 16px;
+      font-weight: 600; letter-spacing: 1px; cursor: pointer;
+      transition: all 0.3s ease; text-transform: uppercase;
+    }
+    .btn-primary {
+      background: #F7C131; color: #0D0D0D;
+    }
+    .btn-primary:hover {
+      background: #FFD54F;
+      box-shadow: 0 0 12px rgba(247, 193, 49, 0.5);
+    }
+    .btn-secondary {
+      background: transparent; color: #E8E0CC;
+      border: 1px solid rgba(247, 193, 49, 0.5);
+    }
+    .btn-secondary:hover {
+      border-color: #F7C131;
+      box-shadow: 0 0 8px rgba(247, 193, 49, 0.3);
+    }
+    .btn:disabled {
+      opacity: 0.5; cursor: not-allowed;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .upload-options { grid-template-columns: 1fr; }
+      .instruction-steps { grid-template-columns: repeat(2, 1fr); }
+      .do-dont { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  
+  <!-- Upload Screen -->
+  <div id="upload-screen">
+    <div class="upload-container">
+      <div class="upload-header">
+        <h1>NEOTWIN</h1>
+        <p>Transform your space into an interactive 3D digital twin</p>
+      </div>
+      
+      <!-- Upload Options -->
+      <div class="upload-options">
+        <div class="upload-card primary" onclick="selectUploadMode('video')">
+          <div class="badge">RECOMMENDED</div>
+          <div class="icon">📹</div>
+          <h3>Upload Video</h3>
+          <p>Walk around recording a 2-5 minute video. We'll extract the perfect frames automatically.</p>
+        </div>
+        <div class="upload-card" onclick="selectUploadMode('photos')">
+          <div class="icon">📷</div>
+          <h3>Upload Photos</h3>
+          <p>Upload 50-300 photos taken from different angles around your space.</p>
+        </div>
+      </div>
+      
+      <!-- Video Upload Area -->
+      <div id="video-upload-area">
+        <p>Drag & drop your video here or click to browse</p>
+        <p class="hint">MP4, MOV, AVI • Max 500MB • 2-5 minutes recommended</p>
+        <input type="file" id="video-input" accept="video/*" hidden />
+        <button class="btn btn-primary" onclick="document.getElementById('video-input').click()">
+          Select Video
+        </button>
+        <div id="video-preview" style="margin-top: 20px; display: none;">
+          <video id="preview-player" controls style="max-width: 100%; border-radius: 8px;"></video>
+        </div>
+      </div>
+      
+      <!-- Photos Upload Area -->
+      <div id="photos-upload-area" style="display: none;">
+        <div style="border: 2px dashed rgba(247, 193, 49, 0.5); border-radius: 8px; padding: 40px; text-align: center;">
+          <p style="color: #E8E0CC; font-size: 16px; margin-bottom: 12px;">Drag & drop photos here or click to browse</p>
+          <p class="hint" style="color: #888888; font-size: 14px;">JPEG, PNG • 50-300 photos • 70%+ overlap</p>
+          <input type="file" id="photos-input" accept="image/*" multiple hidden />
+          <button class="btn btn-secondary" onclick="document.getElementById('photos-input').click()">
+            Select Photos
+          </button>
+        </div>
+      </div>
+      
+      <!-- Upload Progress -->
+      <div id="upload-progress">
+        <div class="progress-bar">
+          <div class="progress-fill" id="upload-fill"></div>
+        </div>
+        <p id="upload-status">Processing...</p>
+      </div>
+      
+      <!-- Validation Warnings -->
+      <div id="validation-warnings"></div>
+      
+      <!-- Capture Instructions -->
+      <div class="instructions-panel">
+        <h3>📹 HOW TO CAPTURE YOUR SPACE</h3>
+        <div class="instruction-steps">
+          <div class="instruction-step">
+            <div class="step-num">1</div>
+            <h4>Start at Corner</h4>
+            <p>Begin recording at one corner of the room</p>
+          </div>
+          <div class="instruction-step">
+            <div class="step-num">2</div>
+            <h4>Walk in Circle</h4>
+            <p>Walk slowly around the perimeter</p>
+          </div>
+          <div class="instruction-step">
+            <div class="step-num">3</div>
+            <h4>Tilt Up & Down</h4>
+            <p>Capture ceiling, walls, and floor</p>
+          </div>
+          <div class="instruction-step">
+            <div class="step-num">4</div>
+            <h4>Get Close</h4>
+            <p>Move closer to furniture and details</p>
+          </div>
+          <div class="instruction-step">
+            <div class="step-num">5</div>
+            <h4>Complete Circle</h4>
+            <p>Return to starting position</p>
+          </div>
+        </div>
+        
+        <div class="do-dont">
+          <div class="do-list">
+            <h4>✓ DO</h4>
+            <ul>
+              <li>Walk slowly and steadily</li>
+              <li>Capture from multiple heights</li>
+              <li>Get close to important objects</li>
+              <li>Shoot in good lighting</li>
+              <li>Complete full 360° circles</li>
+            </ul>
+          </div>
+          <div class="dont-list">
+            <h4>✗ DON'T</h4>
+            <ul>
+              <li>Run or move too fast</li>
+              <li>Stand still and rotate</li>
+              <li>Point only at blank walls</li>
+              <li>Use digital zoom</li>
+              <li>Shoot in very dark areas</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- HUD Overlay (Hidden until scene loads) -->
+  <div id="hud">
+    <div id="search-bar" class="panel">
+      <input type="text" id="search-input" placeholder="SEARCH SCENE... (e.g., red chair)" />
+    </div>
+    <div id="narration-panel" class="panel">
+      <p id="narration-text"></p>
+    </div>
+    <div id="minimap" class="panel"></div>
+    <div id="notification" class="panel">
+      <p id="notification-text"></p>
+    </div>
+    <div id="stats-bar">
+      <span>FPS: <span class="accent" id="fps-counter">0</span></span>
+      <span>ENGINE: <span class="accent">NEOTWIN v1.0</span></span>
+      <span>SCENES: <span class="accent" id="scene-count">1</span></span>
+      <span>STATUS: <span class="accent" id="status-text">ONLINE</span></span>
+    </div>
+  </div>
+  
+  <script type="module" src="/src/main.ts"></script>
+  <script>
+    let currentMode = 'video';
+    
+    function selectUploadMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.upload-card').forEach(c => c.style.borderColor = 'rgba(247, 193, 49, 0.35)');
+      event.currentTarget.style.borderColor = '#F7C131';
+      
+      document.getElementById('video-upload-area').classList.toggle('active', mode === 'video');
+      document.getElementById('photos-upload-area').style.display = mode === 'photos' ? 'block' : 'none';
+    }
+    
+    // Video preview
+    document.getElementById('video-input').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const preview = document.getElementById('video-preview');
+        const player = document.getElementById('preview-player');
+        player.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
+        handleUpload(file, 'video');
+      }
+    });
+    
+    // Photos upload
+    document.getElementById('photos-input').addEventListener('change', function(e) {
+      const files = Array.from(e.target.files);
+      if (files.length > 0) {
+        handleUpload(files, 'photos');
+      }
+    });
+    
+    // Drag and drop
+    const videoArea = document.getElementById('video-upload-area');
+    videoArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      videoArea.classList.add('dragover');
+    });
+    videoArea.addEventListener('dragleave', () => {
+      videoArea.classList.remove('dragover');
+    });
+    videoArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      videoArea.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('video/')) {
+        handleUpload(file, 'video');
+      }
+    });
+    
+    async function handleUpload(fileOrFiles, mode) {
+      const progress = document.getElementById('upload-progress');
+      const fill = document.getElementById('upload-fill');
+      const status = document.getElementById('upload-status');
+      const warnings = document.getElementById('validation-warnings');
+      
+      progress.classList.add('active');
+      warnings.innerHTML = '';
+      status.textContent = 'Uploading...';
+      fill.style.width = '10%';
+      
+      const formData = new FormData();
+      if (mode === 'video') {
+        formData.append('file', fileOrFiles);
+      } else {
+        Array.from(fileOrFiles).forEach(f => formData.append('files', f));
+      }
+      
+      try {
+        fill.style.width = '30%';
+        status.textContent = 'Validating...';
+        
+        const response = await fetch('http://localhost:7860/api/v1/reconstruct', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        fill.style.width = '50%';
+        
+        if (data.status === 'failed') {
+          status.textContent = 'Validation failed';
+          if (data.errors) {
+            data.errors.forEach(err => {
+              warnings.innerHTML += `<div class="warning-box"><p>✗ ${err}</p></div>`;
+            });
+            warnings.classList.add('active');
+          }
+          return;
+        }
+        
+        if (data.warnings && data.warnings.length > 0) {
+          data.warnings.forEach(warn => {
+            warnings.innerHTML += `<div class="info-box"><p>⚠ ${warn}</p></div>`;
+          });
+          warnings.classList.add('active');
+        }
+        
+        status.textContent = `Processing ${data.frame_count || ''} frames...`;
+        fill.style.width = '70%';
+        
+        // Poll for status
+        pollJobStatus(data.job_id, fill, status);
+        
+      } catch (error) {
+        status.textContent = 'Upload failed. Check backend connection.';
+        console.error(error);
+      }
+    }
+    
+    async function pollJobStatus(jobId, fill, status) {
+      const interval = setInterval(async () => {
+        try {
+          const response = await fetch(`http://localhost:7860/api/v1/reconstruct/${jobId}`);
+          const data = await response.json();
+          
+          fill.style.width = `${data.progress * 100}%`;
+          status.textContent = data.message;
+          
+          if (data.status === 'completed') {
+            clearInterval(interval);
+            status.textContent = 'Scene ready! Loading...';
+            setTimeout(() => {
+              document.getElementById('upload-screen').classList.add('hidden');
+              document.getElementById('hud').classList.add('active');
+            }, 1000);
+          } else if (data.status === 'failed') {
+            clearInterval(interval);
+            status.textContent = `Failed: ${data.message}`;
+          }
+        } catch (error) {
+          console.error('Poll error:', error);
+        }
+      }, 2000);
+    }
+    
+    // Initialize with video mode
+    selectUploadMode('video');
+  </script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "stitch": {
+      "serverUrl": "https://mcp.stitch.withgoogle.com/v1",
+      "headers": {
+        "Authorization": "Bearer ${STITCH_API_KEY}"
+      }
+    },
+    "notion": {
+      "serverUrl": "https://mcp.notion.com/mcp"
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    }
+  }
+}

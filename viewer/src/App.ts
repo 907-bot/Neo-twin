@@ -1,0 +1,97 @@
+import * as THREE from 'three';
+import { SceneManager } from './core/SceneManager';
+import { CameraController } from './core/CameraController';
+import { RenderLoop } from './core/RenderLoop';
+import { AvatarLoader } from './character/AvatarLoader';
+import { PathfindingController } from './character/PathfindingController';
+import { NarrationEngine } from './character/NarrationEngine';
+import { SearchEngine } from './search/SearchEngine';
+import { GaussianHighlighter } from './search/GaussianHighlighter';
+
+export class App {
+  private scene: THREE.Scene;
+  private camera: THREE.PerspectiveCamera;
+  private renderer: THREE.WebGLRenderer;
+  private clock: THREE.Clock;
+  private sceneManager: SceneManager;
+  private cameraController: CameraController;
+  private renderLoop: RenderLoop;
+  private avatar: AvatarLoader | null = null;
+  private pathfinding: PathfindingController | null = null;
+  private narration: NarrationEngine | null = null;
+  private searchEngine: SearchEngine | null = null;
+  private highlighter: GaussianHighlighter | null = null;
+
+  constructor(canvas: HTMLCanvasElement) {
+    this.clock = new THREE.Clock();
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x0D0D0D);
+    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    this.camera.position.set(0, 1.6, 5);
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.sceneManager = new SceneManager(this.scene);
+    this.cameraController = new CameraController(this.camera, this.renderer.domElement);
+    this.renderLoop = new RenderLoop(this.renderer, this.scene, this.camera, this.clock);
+  }
+
+  async init() {
+    console.log('🚀 NeoTwin Viewer Initializing...');
+    await this.sceneManager.loadSplat('scenes/demo.splat', (progress) => {
+      document.getElementById('load-fill')!.style.width = `${progress * 100}%`;
+      document.getElementById('load-percent')!.textContent = `${Math.round(progress * 100)}%`;
+    });
+    document.getElementById('loading')!.style.display = 'none';
+    this.avatar = new AvatarLoader(this.scene);
+    await this.avatar.load('assets/avatar.glb');
+    this.pathfinding = new PathfindingController(this.scene);
+    this.narration = new NarrationEngine();
+    this.searchEngine = new SearchEngine('http://localhost:7860/api/v1');
+    this.highlighter = new GaussianHighlighter();
+    this.setupEventListeners();
+    console.log('✅ NeoTwin Viewer Ready');
+  }
+
+  private setupEventListeners() {
+    window.addEventListener('resize', () => this.onResize());
+    document.getElementById('search-input')!.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') this.handleSearch((e.target as HTMLInputElement).value);
+    });
+  }
+
+  private async handleSearch(query: string) {
+    if (!this.searchEngine) return;
+    const result = await this.searchEngine.search(query);
+    if (this.highlighter) this.highlighter.highlight(result.indices);
+    if (this.pathfinding && result.centroid) {
+      this.pathfinding.moveTo(result.centroid.x, result.centroid.y, result.centroid.z);
+    }
+    if (this.narration) {
+      this.narration.speak(`Found ${query} in the scene.`);
+    }
+  }
+
+  private onResize() {
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  animate() {
+    requestAnimationFrame(() => this.animate());
+    this.renderLoop.render();
+    if (this.avatar) this.avatar.update(this.clock.getDelta());
+    if (this.pathfinding) this.pathfinding.update();
+    this.renderLoop.updateFPS();
+    this.updateCoords();
+  }
+
+  private updateCoords() {
+    const coordEl = document.getElementById('coord-display');
+    if (coordEl) {
+      const { x, y, z } = this.camera.position;
+      coordEl.textContent = `X:${x.toFixed(1)} Y:${y.toFixed(1)} Z:${z.toFixed(1)}`;
+    }
+  }
+}

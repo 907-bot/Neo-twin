@@ -1,0 +1,362 @@
+:root {
+  --neon-yellow: #F7C131;
+  --bg-noir: #0D0D0D;
+  --panel-bg: rgba(13, 13, 13, 0.85);
+  --border-dim: rgba(247, 193, 49, 0.2);
+  --border-bright: rgba(247, 193, 49, 0.6);
+  --text-main: #E8E0CC;
+  --text-dim: #888888;
+  --accent-green: #39FF14;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('https://cdn.jsdelivr.net/font-geist/1.0.0/geist-mono.woff2') format('woff2');
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--bg-noir);
+  color: var(--text-main);
+  font-family: 'Rajdhani', sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+#canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* --- HUD LAYOUT --- */
+
+#hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 100;
+  display: grid;
+  grid-template-areas:
+    "header header header"
+    "left center right"
+    "footer footer footer";
+  grid-template-rows: 60px 1fr 40px;
+  grid-template-columns: 320px 1fr 320px;
+  padding: 10px;
+  gap: 10px;
+}
+
+#hud > * {
+  pointer-events: auto;
+}
+
+/* --- PANELS --- */
+
+.glass-panel {
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-dim);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-yellow), transparent);
+  opacity: 0.5;
+}
+
+.panel-header {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-dim);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(247, 193, 49, 0.05);
+}
+
+.panel-header h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--neon-yellow);
+  font-weight: 700;
+}
+
+/* --- TOP BAR --- */
+
+#header {
+  grid-area: header;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-text {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: var(--neon-yellow);
+  text-shadow: 0 0 10px rgba(247, 193, 49, 0.4);
+}
+
+.system-clock {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+/* --- SIDEBARS --- */
+
+#left-sidebar {
+  grid-area: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#right-sidebar {
+  grid-area: right;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.character-card {
+  padding: 15px;
+}
+
+.avatar-container {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #151515;
+  border: 1px solid var(--border-dim);
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.avatar-container::after {
+  content: 'LIVE FEED';
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  font-size: 8px;
+  color: var(--accent-green);
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.status-item {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px;
+  border: 0.5px solid var(--border-dim);
+}
+
+.status-label {
+  font-size: 9px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.status-value {
+  font-size: 14px;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+/* --- SEARCH & NARRATION --- */
+
+#search-container {
+  padding: 10px;
+}
+
+.search-input-wrapper {
+  position: relative;
+}
+
+.search-input-wrapper input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-dim);
+  padding: 12px 15px;
+  color: var(--text-main);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  border-radius: 2px;
+  outline: none;
+  transition: all 0.3s;
+}
+
+.search-input-wrapper input:focus {
+  border-color: var(--neon-yellow);
+  box-shadow: 0 0 15px rgba(247, 193, 49, 0.1);
+}
+
+.narration-box {
+  flex-grow: 1;
+  padding: 15px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-main);
+  overflow-y: auto;
+}
+
+.narration-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 15px;
+  background: var(--neon-yellow);
+  margin-left: 5px;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* --- FOOTER --- */
+
+#footer {
+  grid-area: footer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  background: rgba(13, 13, 13, 0.9);
+  border-top: 1px solid var(--border-dim);
+}
+
+.stat-group {
+  display: flex;
+  gap: 24px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.stat-item .value {
+  color: var(--neon-yellow);
+}
+
+/* --- SCANNING EFFECT --- */
+
+.scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, 
+    transparent 50%, 
+    rgba(247, 193, 49, 0.02) 50%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 101;
+}
+
+.vignette {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none;
+  z-index: 102;
+}
+
+/* --- LOADING --- */
+
+#loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-noir);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader-content {
+  text-align: center;
+}
+
+.loader-title {
+  font-size: 32px;
+  letter-spacing: 10px;
+  color: var(--neon-yellow);
+  margin-bottom: 40px;
+  font-weight: 700;
+}
+
+.progress-container {
+  width: 400px;
+  height: 2px;
+  background: #1A1A1A;
+  position: relative;
+}
+
+.progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--neon-yellow);
+  width: 0%;
+  transition: width 0.3s;
+  box-shadow: 0 0 15px var(--neon-yellow);
+}
+
+.progress-text {
+  margin-top: 15px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+}
