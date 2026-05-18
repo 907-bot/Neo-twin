@@ -12,6 +12,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# CORS: read comma-separated origins from env ("*" for open access)
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",")]
+
 from api.routes_search import router as search_router
 from api.routes_identify import router as identify_router
 from api.routes_narrate import router as narrate_router
@@ -38,10 +42,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS - Allow all origins for development (restrict in production)
+# CORS — driven by ALLOWED_ORIGINS env var
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -1,20 +1,53 @@
-name: Deploy Backend
+name: Deploy Backend → HuggingFace Spaces
 
 on:
   push:
     branches: [main]
     paths: ['backend/**']
+  workflow_dispatch:   # allow manual trigger
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy to HF Spaces
-        uses: huggingface/setup-cli@v2
         with:
-          token: ${{ secrets.HF_TOKEN }}
-      - run: |
-          huggingface-cli upload \
-            ${{ secrets.HF_USERNAME }}/neotwin-api \
-            ./backend .
+          fetch-depth: 0   # full history needed for HF push
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install huggingface_hub CLI
+        run: pip install huggingface_hub
+
+      - name: Push backend folder to HF Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          # Format: username/space-name  e.g. johndoe/neotwin-api
+          HF_SPACE: ${{ secrets.HF_USERNAME }}/neotwin-api
+        run: |
+          python - <<'EOF'
+          import os
+          from huggingface_hub import HfApi
+
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          space_id = os.environ["HF_SPACE"]
+
+          # Ensure the Space exists (will skip if already created)
+          try:
+              api.create_repo(repo_id=space_id, repo_type="space",
+                              space_sdk="docker", exist_ok=True)
+          except Exception as e:
+              print(f"Repo create skipped: {e}")
+
+          # Upload backend/ folder contents to the Space root
+          api.upload_folder(
+              folder_path="./backend",
+              repo_id=space_id,
+              repo_type="space",
+              commit_message="ci: auto-deploy from GitHub Actions",
+          )
+          print(f"✅ Deployed to https://huggingface.co/spaces/{space_id}")
+          EOF

@@ -262,6 +262,16 @@
   </style>
 </head>
 <body>
+  <!-- Runtime config: Vite replaces %VITE_API_URL% at build time -->
+  <script>
+    (function() {
+      var injected = '%VITE_API_URL%';
+      // Fallback when running without a built bundle (vite dev with no .env)
+      window.NEOTWIN_API = (injected && injected.indexOf('%') === -1)
+        ? injected
+        : 'http://localhost:7860';
+    })();
+  </script>
   <canvas id="canvas"></canvas>
   
   <!-- Upload Screen -->
@@ -473,7 +483,7 @@
         fill.style.width = '30%';
         status.textContent = 'Validating...';
         
-        const response = await fetch('http://localhost:7860/api/v1/reconstruct', {
+        const response = await fetch(window.NEOTWIN_API + '/api/v1/reconstruct', {
           method: 'POST',
           body: formData
         });
@@ -514,7 +524,7 @@
     async function pollJobStatus(jobId, fill, status) {
       const interval = setInterval(async () => {
         try {
-          const response = await fetch(`http://localhost:7860/api/v1/reconstruct/${jobId}`);
+          const response = await fetch(`${window.NEOTWIN_API}/api/v1/reconstruct/${jobId}`);
           const data = await response.json();
           
           fill.style.width = `${data.progress * 100}%`;

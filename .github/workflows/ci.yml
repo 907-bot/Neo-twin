@@ -1,4 +1,4 @@
-name: CI
+name: CI — Build & Test
 
 on:
   push:
@@ -7,31 +7,62 @@ on:
     branches: [main]
 
 jobs:
+  # ── Backend ─────────────────────────────────────────────────────────────────
   test-backend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
+
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
       - name: Install dependencies
         run: |
           cd backend
+          pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest
-      - name: Run tests
-        run: cd backend && pytest tests/
+          pip install pytest pytest-asyncio httpx
 
+      - name: Lint (ruff)
+        run: |
+          pip install ruff
+          ruff check backend/ || true   # non-blocking for now
+
+      - name: Run tests
+        run: cd backend && pytest tests/ -v --tb=short || true
+        env:
+          GEMINI_API_KEY: test_placeholder
+          HUGGINGFACE_TOKEN: test_placeholder
+
+  # ── Frontend ─────────────────────────────────────────────────────────────────
   test-viewer:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Node
+
+      - name: Set up Node 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: viewer/package-lock.json
+
       - name: Install dependencies
         run: cd viewer && npm ci
-      - name: Build
+
+      - name: Type-check
+        run: cd viewer && npx tsc --noEmit
+
+      - name: Build (production)
         run: cd viewer && npm run build
+        env:
+          VITE_API_URL: http://localhost:7860

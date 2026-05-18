@@ -47,7 +47,8 @@ export class App {
     await this.avatar.load('assets/avatar.glb');
     this.pathfinding = new PathfindingController(this.scene);
     this.narration = new NarrationEngine();
-    this.searchEngine = new SearchEngine('http://localhost:7860/api/v1');
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:7860/api/v1';
+    this.searchEngine = new SearchEngine(apiUrl);
     this.highlighter = new GaussianHighlighter();
     this.setupEventListeners();
     console.log('✅ NeoTwin Viewer Ready');
