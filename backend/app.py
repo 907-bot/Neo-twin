@@ -12,6 +12,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Force early PyTorch import to ensure transformers pipelines register it correctly
+import torch
+
 # CORS: read comma-separated origins from env ("*" for open access)
 _raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
 ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",")]

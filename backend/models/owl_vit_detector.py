@@ -1,7 +1,6 @@
-"""OWL-ViT Object Detection"""
+import torch
 from transformers import pipeline
 from core.config import settings
-import torch
 
 class OWLViTDetector:
     def __init__(self):

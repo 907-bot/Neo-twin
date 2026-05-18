@@ -9,7 +9,7 @@ export class SceneManager {
 
   async loadSplat(url: string, onProgress?: (progress: number) => void): Promise<void> {
     return new Promise((resolve, reject) => {
-      import('@sparkjoy/splat').then((SPLAT) => {
+      import('gsplat').then((SPLAT) => {
         const renderer = new SPLAT.Renderer();
         SPLAT.Loader.LoadAsync(url, this.scene, (p) => {
           if (onProgress) onProgress(p);
