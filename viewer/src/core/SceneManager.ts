@@ -11,7 +11,7 @@ export class SceneManager {
     return new Promise((resolve, reject) => {
       import('gsplat').then((SPLAT: any) => {
         const renderer = new SPLAT.Renderer();
-        SPLAT.Loader.LoadAsync(url, this.scene, (p) => {
+        SPLAT.Loader.LoadAsync(url, this.scene, (p: number) => {
           if (onProgress) onProgress(p);
         }).then(() => resolve()).catch(reject);
       }).catch(reject);
