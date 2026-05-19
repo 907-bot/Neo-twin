@@ -590,7 +590,7 @@
   <canvas id="canvas"></canvas>
 
   <!-- Loading Screen (Fixed markup for App.ts to load correctly) -->
-  <div id="loading">
+  <div id="loading" style="display: none !important;">
     <div class="loader-content">
       <h1 class="loader-title">NEOTWIN</h1>
       <div class="progress-container">
@@ -599,6 +599,20 @@
       <p class="progress-text" id="load-percent">0%</p>
     </div>
   </div>
+  
+  <script>
+    // Failsafe: Automatically dismiss the preloader after 4.5 seconds if script bundles hang or fail
+    setTimeout(function() {
+      var loader = document.getElementById('loading');
+      if (loader && loader.style.display !== 'none') {
+        console.warn('⚠️ Failsafe: Hiding preloader via inline timer.');
+        loader.style.opacity = '0';
+        setTimeout(function() {
+          loader.style.display = 'none';
+        }, 500);
+      }
+    }, 4500);
+  </script>
   
   <!-- Upload Screen -->
   <div id="upload-screen">

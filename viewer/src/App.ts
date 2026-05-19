@@ -25,7 +25,7 @@ export class App {
   constructor(canvas: HTMLCanvasElement) {
     this.clock = new THREE.Clock();
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0D0D0D);
+    this.scene.background = new THREE.Color(0x08090A);
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     this.camera.position.set(0, 1.6, 5);
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -38,18 +38,58 @@ export class App {
 
   async init() {
     console.log('🚀 NeoTwin Viewer Initializing...');
-    await this.sceneManager.loadSplat('scenes/demo.splat', (progress) => {
-      document.getElementById('load-fill')!.style.width = `${progress * 100}%`;
-      document.getElementById('load-percent')!.textContent = `${Math.round(progress * 100)}%`;
-    });
-    document.getElementById('loading')!.style.display = 'none';
-    this.avatar = new AvatarLoader(this.scene);
-    await this.avatar.load('assets/avatar.glb');
-    this.pathfinding = new PathfindingController(this.scene);
-    this.narration = new NarrationEngine();
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:7860/api/v1';
-    this.searchEngine = new SearchEngine(apiUrl);
-    this.highlighter = new GaussianHighlighter();
+    
+    // Safety timeout: Ensure loader is hidden after 4s regardless of load state
+    setTimeout(() => {
+      const loader = document.getElementById('loading');
+      if (loader && loader.style.display !== 'none') {
+        console.warn('⚠️ Safety preloader timeout reached. Dismissing loading screen.');
+        loader.style.opacity = '0';
+        setTimeout(() => {
+          loader.style.display = 'none';
+        }, 500);
+      }
+    }, 4000);
+
+    try {
+      await this.sceneManager.loadSplat('scenes/demo.splat', (progress) => {
+        const fill = document.getElementById('load-fill');
+        const percent = document.getElementById('load-percent');
+        if (fill) fill.style.width = `${progress * 100}%`;
+        if (percent) percent.textContent = `${Math.round(progress * 100)}%`;
+      });
+    } catch (e) {
+      console.warn('[NeoTwin] Splat file loading skipped or not found. Operating in local fallback mode:', e);
+    }
+
+    // Dismiss loader immediately since load attempt is complete
+    const loader = document.getElementById('loading');
+    if (loader) {
+      loader.style.opacity = '0';
+      setTimeout(() => {
+        loader.style.display = 'none';
+      }, 500);
+    }
+
+    try {
+      this.avatar = new AvatarLoader(this.scene);
+      await this.avatar.load('assets/avatar.glb').catch(err => {
+        console.warn('[NeoTwin] Avatar asset not found or failed to load:', err);
+      });
+    } catch (e) {
+      console.warn('[NeoTwin] Avatar loader failed to initialize:', e);
+    }
+
+    try {
+      this.pathfinding = new PathfindingController(this.scene);
+      this.narration = new NarrationEngine();
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:7860/api/v1';
+      this.searchEngine = new SearchEngine(apiUrl);
+      this.highlighter = new GaussianHighlighter();
+    } catch (e) {
+      console.warn('[NeoTwin] Telemetry engine components skipped:', e);
+    }
+
     this.setupEventListeners();
     console.log('✅ NeoTwin Viewer Ready');
   }
