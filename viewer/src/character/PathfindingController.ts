@@ -1,9 +1,14 @@
 import * as THREE from 'three';
 
 export class PathfindingController {
+  private scene: THREE.Scene;
   private target: THREE.Vector3 | null = null;
   private speed = 0.03;
   private isMoving = false;
+
+  constructor(scene: THREE.Scene) {
+    this.scene = scene;
+  }
 
   update() {
     if (!this.target || !this.isMoving) return;
