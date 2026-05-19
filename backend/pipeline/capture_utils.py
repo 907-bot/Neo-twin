@@ -20,7 +20,7 @@ class VideoProcessor:
         self.max_duration_sec = 600
         self.target_fps = 2
         self.max_resolution = 1920
-        self.blur_threshold = 100.0
+        self.blur_threshold = 15.0
         self.min_frames = 50
         self.max_frames = 500
 
@@ -192,24 +192,42 @@ class VideoProcessor:
         return output_dir, final_count
 
     def filter_blurry_frames(self, frames_dir: str, threshold: float = None) -> int:
-        """Remove blurry frames using Laplacian variance"""
+        """Remove blurry frames using Laplacian variance, ensuring we keep a minimum count of clear frames"""
         if threshold is None:
             threshold = self.blur_threshold
         
         frames = sorted([f for f in os.listdir(frames_dir) if f.endswith('.jpg')])
-        removed = 0
         
+        # Calculate variance for each frame
+        frame_variances = []
         for frame in frames:
             path = os.path.join(frames_dir, frame)
             img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
             if img is None:
                 continue
-            
             variance = cv2.Laplacian(img, cv2.CV_64F).var()
-            
-            if variance < threshold:
-                os.remove(path)
-                removed += 1
+            frame_variances.append((frame, variance))
+        
+        # Sort frames by variance (clearest first)
+        frame_variances.sort(key=lambda x: x[1], reverse=True)
+        
+        # Determine which frames to keep
+        kept_frames = set()
+        for i, (frame, variance) in enumerate(frame_variances):
+            # Always keep the frame if it's above the blur threshold, 
+            # OR if we need to satisfy the minimum frames requirement (min_frames)
+            if variance >= threshold or len(kept_frames) < self.min_frames:
+                kept_frames.add(frame)
+        
+        # Delete the ones we didn't keep
+        removed = 0
+        for frame in frames:
+            if frame not in kept_frames:
+                try:
+                    os.remove(os.path.join(frames_dir, frame))
+                    removed += 1
+                except Exception:
+                    pass
         
         print(f"Removed {removed} blurry frames, kept {len(frames) - removed}")
         return len(frames) - removed
