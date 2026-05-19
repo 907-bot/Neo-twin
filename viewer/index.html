@@ -624,13 +624,13 @@
       
       <!-- Upload Options Grid -->
       <div class="upload-options">
-        <div class="upload-card primary" onclick="selectUploadMode('video')">
+        <div class="upload-card primary" onclick="selectUploadMode('video', this)">
           <div class="badge">RECOMMENDED</div>
           <div class="icon">📹</div>
           <h3>Upload Video</h3>
           <p>Walk around recording a 2-5 minute video. We will extract the perfect keyframes automatically.</p>
         </div>
-        <div class="upload-card" onclick="selectUploadMode('photos')">
+        <div class="upload-card" onclick="selectUploadMode('photos', this)">
           <div class="icon">📷</div>
           <h3>Upload Photos</h3>
           <p>Upload 50-300 photos taken from overlapping angles around your space.</p>
@@ -761,14 +761,18 @@
   <script>
     let currentMode = 'video';
     
-    function selectUploadMode(mode) {
+    function selectUploadMode(mode, element) {
       currentMode = mode;
       document.querySelectorAll('.upload-card').forEach(c => {
         c.classList.remove('primary');
         c.style.borderColor = 'var(--border-thin)';
       });
-      event.currentTarget.classList.add('primary');
-      event.currentTarget.style.borderColor = 'var(--accent-gold)';
+      
+      const targetCard = element || document.querySelector(`.upload-card[onclick*="'${mode}'"]`);
+      if (targetCard) {
+        targetCard.classList.add('primary');
+        targetCard.style.borderColor = 'var(--accent-gold)';
+      }
       
       document.getElementById('video-upload-area').style.display = mode === 'video' ? 'block' : 'none';
       document.getElementById('photos-upload-area').style.display = mode === 'photos' ? 'block' : 'none';

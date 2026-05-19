@@ -151,14 +151,20 @@ async def run_pipeline(job_id: str, data_dir: str, iterations: int):
         
         # Download the demo splat to be served
         import urllib.request
-        demo_splat_url = "https://907-bot.github.io/Neo-twin/scenes/demo.splat"
-        backup_url = "https://huggingface.co/datasets/jxuhf/nerf-gs-datasets/resolve/main/demo.splat"
+        demo_splat_url = "https://huggingface.co/cakewalk/splat-data/resolve/main/plush.splat"
+        backup_url = "https://huggingface.co/cakewalk/splat-data/resolve/main/room.splat"
         try:
+            print(f"Downloading primary demo splat fallback from: {demo_splat_url}")
             urllib.request.urlretrieve(demo_splat_url, splat_path)
-        except Exception:
+            print("Successfully downloaded primary demo splat fallback!")
+        except Exception as e1:
+            print(f"Primary fallback URL failed: {str(e1)}. Trying backup URL...")
             try:
+                print(f"Downloading backup demo splat fallback from: {backup_url}")
                 urllib.request.urlretrieve(backup_url, splat_path)
-            except Exception:
+                print("Successfully downloaded backup demo splat fallback!")
+            except Exception as e2:
+                print(f"Backup fallback URL also failed: {str(e2)}. Creating dummy placeholder...")
                 # Create a placeholder dummy splat if offline completely
                 with open(splat_path, "w") as f:
                     f.write("dummy_splat_content")

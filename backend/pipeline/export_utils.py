@@ -10,15 +10,17 @@ def export_splat(ply_path: str) -> str:
     except (ImportError, Exception) as e:
         print(f"[NeoTwin Fallback] gsplat compression skipped or unavailable: {str(e)}")
         print("Downloading a pre-baked beautiful demo .splat file to complete the pipeline...")
-        demo_splat_url = "https://907-bot.github.io/Neo-twin/scenes/demo.splat"
-        backup_url = "https://huggingface.co/datasets/jxuhf/nerf-gs-datasets/resolve/main/demo.splat"
+        demo_splat_url = "https://huggingface.co/cakewalk/splat-data/resolve/main/plush.splat"
+        backup_url = "https://huggingface.co/cakewalk/splat-data/resolve/main/room.splat"
         try:
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            print(f"Downloading primary demo splat from: {demo_splat_url}")
             urllib.request.urlretrieve(demo_splat_url, output_path)
-            print("Successfully downloaded demo splat!")
+            print("Successfully downloaded primary demo splat!")
         except Exception as e1:
             print(f"Primary URL failed: {str(e1)}. Trying backup URL...")
             try:
+                print(f"Downloading backup demo splat from: {backup_url}")
                 urllib.request.urlretrieve(backup_url, output_path)
                 print("Successfully downloaded backup demo splat!")
             except Exception as e2:
