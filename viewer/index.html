@@ -266,10 +266,11 @@
   <script>
     (function() {
       var injected = '%VITE_API_URL%';
-      // Fallback when running without a built bundle (vite dev with no .env)
-      window.NEOTWIN_API = (injected && injected.indexOf('%') === -1)
+      var baseApi = (injected && injected.indexOf('%') === -1)
         ? injected
         : 'http://localhost:7860';
+      // Normalize: strip trailing '/api/v1' to avoid double-prefixing in index.html
+      window.NEOTWIN_API = baseApi.replace(/\/api\/v1\/?$/, '');
     })();
   </script>
   <canvas id="canvas"></canvas>
@@ -410,7 +411,7 @@
     </div>
   </div>
   
-  <script type="module" src="/src/main.ts"></script>
+  <script type="module" src="./src/main.ts"></script>
   <script>
     let currentMode = 'video';
     
