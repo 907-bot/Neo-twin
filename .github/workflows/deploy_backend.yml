@@ -26,7 +26,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           # Format: username/space-name  e.g. johndoe/neotwin-api
-          HF_SPACE: ${{ secrets.HF_USERNAME }}/neotwin-api
+          HF_SPACE: 1qwsd/neotwin-api
         run: |
           python - <<'EOF'
           import os

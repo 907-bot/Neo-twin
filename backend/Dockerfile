@@ -9,9 +9,12 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libgomp1 \
+    colmap \
+    libboost-all-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+ENV QT_QPA_PLATFORM=offscreen
 
 # Copy and install Python deps first (layer cache)
 COPY requirements.txt .
