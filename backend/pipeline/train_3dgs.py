@@ -44,10 +44,26 @@ def train_3dgs(data_dir: str, sparse_dir: str, iterations: int = 30000) -> str:
     else:
         # Fallback Mode: CPU space, missing GPU, or empty COLMAP sparse reconstruction
         print("[NeoTwin Info] GPU training bypassed. Successfully initialized simulation mode.")
-        print("[NeoTwin Info] Creating simulated point cloud structure...")
-        os.makedirs(os.path.dirname(ply_path), exist_ok=True)
-        # Create a valid minimal ASCII PLY header to satisfy downstream readers
-        with open(ply_path, "w") as f:
-            f.write("ply\nformat ascii 1.0\nelement vertex 0\nend_header\n")
+        if sparse_reconstruction_exists:
+            print(f"[NeoTwin Info] Converting COLMAP sparse reconstruction to PLY: {ply_path}")
+            os.makedirs(os.path.dirname(ply_path), exist_ok=True)
+            try:
+                cmd = [
+                    settings.COLMAP_PATH, "model_converter",
+                    "--input_path", sparse_dir,
+                    "--output_path", ply_path,
+                    "--output_type", "PLY"
+                ]
+                subprocess.run(cmd, check=True)
+                print("[NeoTwin Info] Successfully exported sparse PLY model from COLMAP!")
+            except Exception as e:
+                print(f"[NeoTwin Error] model_converter failed: {str(e)}. Falling back to empty cloud.")
+                with open(ply_path, "w") as f:
+                    f.write("ply\nformat ascii 1.0\nelement vertex 0\nend_header\n")
+        else:
+            print("[NeoTwin Info] Creating simulated point cloud structure...")
+            os.makedirs(os.path.dirname(ply_path), exist_ok=True)
+            with open(ply_path, "w") as f:
+                f.write("ply\nformat ascii 1.0\nelement vertex 0\nend_header\n")
             
     return ply_path

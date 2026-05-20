@@ -61,6 +61,7 @@ export class App {
         if (fill) fill.style.width = `${progress * 100}%`;
         if (percent) percent.textContent = `${Math.round(progress * 100)}%`;
       });
+      this.frameSplat();
     } catch (e) {
       console.warn('[NeoTwin] Splat file loading skipped or not found. Operating in local fallback mode:', e);
     }
@@ -121,6 +122,7 @@ export class App {
         if (fill) fill.style.width = `${progress * 100}%`;
         if (percent) percent.textContent = `${Math.round(progress * 100)}%`;
       });
+      this.frameSplat();
     } catch (e) {
       console.error('[NeoTwin] Error loading dynamic splat scene:', e);
     }
@@ -162,6 +164,7 @@ export class App {
   animate() {
     requestAnimationFrame(() => this.animate());
     this.renderLoop.render();
+    if (this.cameraController) this.cameraController.update();
     if (this.avatar) this.avatar.update(this.clock.getDelta());
     if (this.pathfinding) this.pathfinding.update();
     this.renderLoop.updateFPS();
@@ -173,6 +176,17 @@ export class App {
     if (coordEl) {
       const { x, y, z } = this.camera.position;
       coordEl.textContent = `X:${x.toFixed(1)} Y:${y.toFixed(1)} Z:${z.toFixed(1)}`;
+    }
+  }
+
+  private frameSplat() {
+    const splat = this.sceneManager.getSplatPoints();
+    if (splat && this.cameraController) {
+      splat.geometry.computeBoundingBox();
+      const box = splat.geometry.boundingBox;
+      if (box) {
+        this.cameraController.fitToBox(box);
+      }
     }
   }
 }
