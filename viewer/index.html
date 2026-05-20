@@ -631,7 +631,7 @@
           <p>Walk around recording a 2-5 minute video. We will extract the perfect keyframes automatically.</p>
         </div>
         <div class="upload-card" onclick="selectUploadMode('photos', this)">
-          <div class="icon">📷</div>
+          <div class="icon">📸</div>
           <h3>Upload Photos</h3>
           <p>Upload 50-300 photos taken from overlapping angles around your space.</p>
         </div>
@@ -640,6 +640,16 @@
           <div class="icon">💻</div>
           <h3>Run Simulation</h3>
           <p>Instantly explore the fully reconstructed, pre-rendered champagne digital twin model.</p>
+        </div>
+      </div>
+
+      <!-- Recent Scenes History -->
+      <div id="history-section" style="margin-top: 30px; display: none; text-align: left;">
+        <h3 style="font-size: 1.1rem; color: var(--accent-gold); margin-bottom: 12px; border-bottom: 1px solid var(--border-thin); padding-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+          🕒 Recent Digital Twins
+        </h3>
+        <div id="history-list" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- History items injected here -->
         </div>
       </div>
       
@@ -738,6 +748,13 @@
   
   <!-- HUD Overlay -->
   <div id="hud">
+    <!-- Back to Upload Screen Button -->
+    <div id="action-buttons" style="position: absolute; top: 20px; left: 20px; z-index: 100; display: flex; gap: 10px;">
+      <button class="btn btn-secondary" onclick="exitSimulation()" style="background: rgba(18, 19, 23, 0.85); backdrop-filter: blur(10px); border: 1px solid var(--border-thin); padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; color: var(--text-bright); display: flex; align-items: center; gap: 6px;">
+        ✨ Create New Twin
+      </button>
+    </div>
+    
     <div id="search-bar" class="panel">
       <input type="text" id="search-input" placeholder="Search visual assets... (e.g., green chair)" />
     </div>
@@ -897,6 +914,8 @@
               const splatUrl = data.outputs && data.outputs.splat
                 ? `${window.NEOTWIN_API}/${data.outputs.splat}`
                 : `${base}scenes/demo.splat`;
+              
+              saveToHistory(jobId, splatUrl);
               launchSimulation(splatUrl);
             }, 1200);
           } else if (data.status === 'failed') {
@@ -915,6 +934,11 @@
         ? window.location.pathname 
         : window.location.pathname + '/';
       const targetScene = scenePath || `${base}scenes/demo.splat`;
+      
+      if (!scenePath) {
+        saveToHistory('demo-scene', targetScene, 'Pre-rendered Demo Room');
+      }
+      
       if (window.neotwinApp) {
         window.neotwinApp.loadScene(targetScene);
       }
@@ -940,6 +964,89 @@
       `;
       warnings.classList.add('active');
     }
+
+    function saveToHistory(id, url, name) {
+      let history = JSON.parse(localStorage.getItem('neotwin_history') || '[]');
+      history = history.filter(item => item.id !== id);
+      
+      const item = {
+        id: id,
+        url: url,
+        name: name || `Reconstruction #${id.substring(0, 8)}`,
+        timestamp: new Date().toLocaleString()
+      };
+      history.unshift(item);
+      if (history.length > 5) history.pop();
+      
+      localStorage.setItem('neotwin_history', JSON.stringify(history));
+      renderHistoryList();
+    }
+
+    function renderHistoryList() {
+      const historyList = document.getElementById('history-list');
+      const historySection = document.getElementById('history-section');
+      const history = JSON.parse(localStorage.getItem('neotwin_history') || '[]');
+      
+      if (history.length === 0) {
+        historySection.style.display = 'none';
+        return;
+      }
+      
+      historySection.style.display = 'block';
+      historyList.innerHTML = '';
+      
+      history.forEach(item => {
+        const row = document.createElement('div');
+        row.style.cssText = `
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: rgba(18, 19, 23, 0.4);
+          border: 1px solid var(--border-thin);
+          border-radius: 6px;
+          padding: 10px 16px;
+          transition: all 0.2s ease;
+        `;
+        
+        row.innerHTML = `
+          <div>
+            <div style="font-weight: 600; color: var(--text-bright); font-size: 0.95rem;">${item.name}</div>
+            <div style="font-size: 0.8rem; color: var(--text-mute);">${item.timestamp}</div>
+          </div>
+          <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;" onclick="launchSimulation('${item.url}')">
+            Load Scene
+          </button>
+        `;
+        
+        row.addEventListener('mouseenter', () => {
+          row.style.borderColor = 'var(--accent-gold)';
+          row.style.background = 'rgba(217, 180, 143, 0.05)';
+        });
+        row.addEventListener('mouseleave', () => {
+          row.style.borderColor = 'var(--border-thin)';
+          row.style.background = 'rgba(18, 19, 23, 0.4)';
+        });
+        
+        historyList.appendChild(row);
+      });
+    }
+
+    function exitSimulation() {
+      const uploadScreen = document.getElementById('upload-screen');
+      const hud = document.getElementById('hud');
+      
+      hud.classList.remove('active');
+      uploadScreen.classList.remove('hidden');
+      uploadScreen.style.opacity = '1';
+      
+      document.getElementById('upload-progress').style.display = 'none';
+      document.getElementById('upload-status').textContent = 'Processing...';
+      document.getElementById('upload-fill').style.width = '0%';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderHistoryList();
+    });
     
     // Default initial mode Selection
     selectUploadMode('video');

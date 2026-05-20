@@ -1,6 +1,5 @@
 .env
 .env.local
-*.splat
 output/
 data/images/
 data/database.db
