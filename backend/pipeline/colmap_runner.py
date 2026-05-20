@@ -65,14 +65,15 @@ def run_colmap(image_dir: str, output_dir: str = None) -> str:
     # 3. `--ImageReader.single_camera 1` shares the same camera parameters across
     #    all video frames (since they come from the same physical camera/sensor).
     #    This prevents independent camera calibration drift and solves registration errors.
-    # 4. `--ImageReader.camera_model SIMPLE_RADIAL` is highly stable for consumer cameras
-    #    and prevents parameter estimation failures compared to the 8-parameter OPENCV model.
+    # 4. `--ImageReader.camera_model SIMPLE_PINHOLE` is used because smartphone video
+    #    frames are already distortion-corrected by the phone software. Using a pinhole
+    #    model prevents distortion parameter estimation from diverging during GBA.
     print("Step 1: Feature extraction (Optimized)...")
     subprocess.run([
         settings.COLMAP_PATH, "feature_extractor",
         "--image_path",                          image_dir,
         "--database_path",                       database_path,
-        "--ImageReader.camera_model",            "SIMPLE_RADIAL",
+        "--ImageReader.camera_model",            "SIMPLE_PINHOLE",
         "--ImageReader.single_camera",           "1",
         "--SiftExtraction.use_gpu",              gpu_param,
         "--SiftExtraction.first_octave",         "0",     # Disable upscaling for 3-5x speedup
@@ -109,17 +110,15 @@ def run_colmap(image_dir: str, output_dir: str = None) -> str:
     subprocess.run(matcher_cmd, check=True)
 
     # ── Step 3: Sparse reconstruction ───────────────────────────────────────
-    print("Step 3: Sparse reconstruction (High Resiliency)...")
+    # We use COLMAP's default mapper parameters because they are highly tuned
+    # for geometric stability. Custom thresholds (like loose reprojection limits)
+    # can introduce noise that corrupts shared camera intrinsics, leading to loop failures.
+    print("Step 3: Sparse reconstruction (Standard Defaults)...")
     subprocess.run([
         settings.COLMAP_PATH, "mapper",
         "--database_path",                    database_path,
         "--image_path",                       image_dir,
         "--output_path",                      output_dir,
-        "--Mapper.init_min_tri_angle",        "4.0",   # Handles low-parallax camera moves
-        "--Mapper.init_min_num_inliers",      "30",    # Initializes with fewer features
-        "--Mapper.init_max_reg_trials",       "300",   # Searches harder for starting pairs
-        "--Mapper.abs_pose_min_num_inliers",  "15",    # Registers hard-to-match frames
-        "--Mapper.filter_max_reproj_error",   "6.0",   # Tolerates minor lens distortion & noise
     ], check=True)
 
     return os.path.join(output_dir, "0")
