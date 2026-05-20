@@ -891,9 +891,12 @@
             clearInterval(interval);
             status.textContent = 'Digital twin active! Initializing feed...';
             setTimeout(() => {
+              const base = window.location.pathname.endsWith('/') 
+                ? window.location.pathname 
+                : window.location.pathname + '/';
               const splatUrl = data.outputs && data.outputs.splat
                 ? `${window.NEOTWIN_API}/${data.outputs.splat}`
-                : 'scenes/demo.splat';
+                : `${base}scenes/demo.splat`;
               launchSimulation(splatUrl);
             }, 1200);
           } else if (data.status === 'failed') {
@@ -908,7 +911,10 @@
     }
     
     function launchSimulation(scenePath) {
-      const targetScene = scenePath || 'scenes/demo.splat';
+      const base = window.location.pathname.endsWith('/') 
+        ? window.location.pathname 
+        : window.location.pathname + '/';
+      const targetScene = scenePath || `${base}scenes/demo.splat`;
       if (window.neotwinApp) {
         window.neotwinApp.loadScene(targetScene);
       }

@@ -53,7 +53,9 @@ export class App {
     }, 4000);
 
     try {
-      await this.sceneManager.loadSplat('scenes/demo.splat', (progress) => {
+      const baseUrl = import.meta.env.BASE_URL || '/';
+      const splatUrl = baseUrl.endsWith('/') ? `${baseUrl}scenes/demo.splat` : `${baseUrl}/scenes/demo.splat`;
+      await this.sceneManager.loadSplat(splatUrl, (progress) => {
         const fill = document.getElementById('load-fill');
         const percent = document.getElementById('load-percent');
         if (fill) fill.style.width = `${progress * 100}%`;
@@ -74,7 +76,9 @@ export class App {
 
     try {
       this.avatar = new AvatarLoader(this.scene);
-      await this.avatar.load('assets/avatar.glb').catch(err => {
+      const baseUrl = import.meta.env.BASE_URL || '/';
+      const avatarUrl = baseUrl.endsWith('/') ? `${baseUrl}assets/avatar.glb` : `${baseUrl}/assets/avatar.glb`;
+      await this.avatar.load(avatarUrl).catch(err => {
         console.warn('[NeoTwin] Avatar asset not found or failed to load:', err);
       });
     } catch (e) {
