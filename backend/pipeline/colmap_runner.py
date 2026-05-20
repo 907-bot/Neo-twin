@@ -49,7 +49,9 @@ def run_colmap(image_dir: str, output_dir: str = None) -> str:
         output_dir = os.path.join(image_dir, "sparse")
     os.makedirs(output_dir, exist_ok=True)
 
-    database_path = os.path.join(image_dir, "database.db")
+    # Put database file one level above image_dir to prevent COLMAP from
+    # scanning database files (.db, .db-shm, .db-wal) as image files.
+    database_path = os.path.join(os.path.dirname(image_dir), f"{os.path.basename(image_dir)}_database.db")
     gpu_param = "1" if GPU_AVAILABLE else "0"
 
     print(f"COLMAP execution config: GPU_ENABLED={GPU_AVAILABLE} (Detected via torch)")
@@ -60,12 +62,18 @@ def run_colmap(image_dir: str, output_dir: str = None) -> str:
     #    Upscaling takes 4x-10x longer. Disabling it speeds up extraction by 3-5x.
     # 2. `--SiftExtraction.max_num_features 2048` limits the number of keypoints,
     #    which speeds up the extraction and quadratic matching steps.
+    # 3. `--ImageReader.single_camera 1` shares the same camera parameters across
+    #    all video frames (since they come from the same physical camera/sensor).
+    #    This prevents independent camera calibration drift and solves registration errors.
+    # 4. `--ImageReader.camera_model SIMPLE_RADIAL` is highly stable for consumer cameras
+    #    and prevents parameter estimation failures compared to the 8-parameter OPENCV model.
     print("Step 1: Feature extraction (Optimized)...")
     subprocess.run([
         settings.COLMAP_PATH, "feature_extractor",
         "--image_path",                          image_dir,
         "--database_path",                       database_path,
-        "--ImageReader.camera_model",            "OPENCV",
+        "--ImageReader.camera_model",            "SIMPLE_RADIAL",
+        "--ImageReader.single_camera",           "1",
         "--SiftExtraction.use_gpu",              gpu_param,
         "--SiftExtraction.first_octave",         "0",     # Disable upscaling for 3-5x speedup
         "--SiftExtraction.max_num_features",     "2048",  # Limit features to keep matching fast
