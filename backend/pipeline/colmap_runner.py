@@ -18,15 +18,16 @@ def run_colmap(image_dir: str, output_dir: str = None) -> str:
         "--database_path", database_path,
         "--ImageReader.camera_model", "OPENCV",
         "--SiftExtraction.use_gpu", "0",
-        "--SiftExtraction.max_num_features", "10240",
-        "--SiftExtraction.estimate_affine_shape", "1"
+        "--SiftExtraction.max_num_features", "4096",    # Reduced for speed (was 10240)
+        "--SiftExtraction.estimate_affine_shape", "0"   # Disabled for speed (was 1)
     ], check=True)
-    print("Step 2: Feature matching (Permissive)...")
+    print("Step 2: Feature matching (Sequential)...")
     subprocess.run([
-        settings.COLMAP_PATH, "exhaustive_matcher",
+        settings.COLMAP_PATH, "sequential_matcher",     # Using sequential instead of exhaustive for video
         "--database_path", database_path,
         "--SiftMatching.use_gpu", "0",
-        "--SiftMatching.max_ratio", "0.85"
+        "--SequentialMatching.overlap", "10",           # Match each frame with 10 adjacent frames
+        "--SequentialMatching.loop_detection", "1"      # Still attempt loop detection
     ], check=True)
     print("Step 3: Sparse reconstruction (High Resiliency)...")
     subprocess.run([
