@@ -32,6 +32,7 @@ export class App {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.sceneManager = new SceneManager(this.scene);
+    this.sceneManager.addLights();
     this.cameraController = new CameraController(this.camera, this.renderer.domElement);
     this.renderLoop = new RenderLoop(this.renderer, this.scene, this.camera, this.clock);
   }
@@ -52,7 +53,7 @@ export class App {
     }, 4000);
 
     try {
-      await this.sceneManager.loadSplat('scenes/plush.splat', (progress) => {
+      await this.sceneManager.loadSplat('scenes/demo.splat', (progress) => {
         const fill = document.getElementById('load-fill');
         const percent = document.getElementById('load-percent');
         if (fill) fill.style.width = `${progress * 100}%`;
@@ -82,16 +83,51 @@ export class App {
 
     try {
       this.pathfinding = new PathfindingController(this.scene);
+      if (this.avatar) {
+        this.pathfinding.setAvatar(this.avatar);
+      }
       this.narration = new NarrationEngine();
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:7860/api/v1';
       this.searchEngine = new SearchEngine(apiUrl);
-      this.highlighter = new GaussianHighlighter();
+      this.highlighter = new GaussianHighlighter(this.sceneManager);
     } catch (e) {
       console.warn('[NeoTwin] Telemetry engine components skipped:', e);
     }
 
     this.setupEventListeners();
     console.log('✅ NeoTwin Viewer Ready');
+  }
+
+  async loadScene(url: string) {
+    console.log(`[NeoTwin] Loading dynamic scene: ${url}`);
+    
+    // Show preloader
+    const loader = document.getElementById('loading');
+    const fill = document.getElementById('load-fill');
+    const percent = document.getElementById('load-percent');
+    if (loader) {
+      loader.style.display = 'flex';
+      loader.style.opacity = '1';
+    }
+    if (fill) fill.style.width = '0%';
+    if (percent) percent.textContent = '0%';
+    
+    try {
+      await this.sceneManager.loadSplat(url, (progress) => {
+        if (fill) fill.style.width = `${progress * 100}%`;
+        if (percent) percent.textContent = `${Math.round(progress * 100)}%`;
+      });
+    } catch (e) {
+      console.error('[NeoTwin] Error loading dynamic splat scene:', e);
+    }
+    
+    // Hide preloader
+    if (loader) {
+      loader.style.opacity = '0';
+      setTimeout(() => {
+        loader.style.display = 'none';
+      }, 500);
+    }
   }
 
   private setupEventListeners() {

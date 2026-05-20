@@ -5,3 +5,5 @@ const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 const app = new App(canvas);
 app.init();
 app.animate();
+
+(window as any).neotwinApp = app;

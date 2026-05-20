@@ -64,6 +64,12 @@ app.add_middleware(
 if settings.ENABLE_MONITORING:
     setup_monitoring(app)
 
+from fastapi.staticfiles import StaticFiles
+
+# Ensure data directory exists and mount it statically to serve reconstruction outputs
+os.makedirs("data", exist_ok=True)
+app.mount("/data", StaticFiles(directory="data"), name="data")
+
 # Include routers
 app.include_router(health_router, prefix="/api/v1", tags=["health"])
 app.include_router(search_router, prefix="/api/v1", tags=["search"])
