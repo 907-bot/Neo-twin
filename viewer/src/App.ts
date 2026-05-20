@@ -52,7 +52,7 @@ export class App {
     }, 4000);
 
     try {
-      await this.sceneManager.loadSplat('scenes/demo.splat', (progress) => {
+      await this.sceneManager.loadSplat('scenes/plush.splat', (progress) => {
         const fill = document.getElementById('load-fill');
         const percent = document.getElementById('load-percent');
         if (fill) fill.style.width = `${progress * 100}%`;

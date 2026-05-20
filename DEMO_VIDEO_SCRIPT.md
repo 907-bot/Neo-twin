@@ -261,7 +261,7 @@ Upload Your Video Today
 ## 🎨 STYLE GUIDE
 
 ### **Colors:**
-- Background: #0D0D0D (void black)
+- Background: #0d0d0dff (void black)
 - Primary accent: #F7C131 (GTA yellow)
 - Secondary accent: #00CFFF (cyber cyan)
 - Success: #39FF14 (neon green)
