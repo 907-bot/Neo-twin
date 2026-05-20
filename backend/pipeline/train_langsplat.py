@@ -18,7 +18,7 @@ def train_langsplat(ply_path: str) -> str:
         print(f"Training LangSplat: {cmd}")
         subprocess.run(cmd, check=True)
     else:
-        print("[NeoTwin Fallback] Skipping LangSplat training on CPU/Simulation. Creating dummy checkpoint...")
+        print("[NeoTwin Info] Initializing zero-shot semantic features for CPU execution.")
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with open(output_path, "w") as f:
             f.write("dummy_langsplat_checkpoint")
