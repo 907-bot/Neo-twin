@@ -19,6 +19,48 @@ class SearchResult(BaseModel):
     count: int
     refined_query: str = ""
 
+def create_smart_mock_checkpoint(checkpoint_path):
+    import os
+    import torch
+    import numpy as np
+    
+    # Pre-baked coordinate hotspots for the demo and room scenes
+    hotspots = [
+        {"label": "plush toy", "centroid": [0.0, 0.0, 0.0]},
+        {"label": "chair", "centroid": [0.5, -0.2, 1.2]},
+        {"label": "table", "centroid": [-0.1, -0.5, 0.8]},
+        {"label": "plant", "centroid": [-1.2, 0.4, 2.0]},
+        {"label": "computer", "centroid": [-0.2, 0.2, 0.6]},
+        {"label": "lamp", "centroid": [0.8, 0.9, -0.5]},
+        {"label": "wall", "centroid": [0.0, -1.0, 0.0]}
+    ]
+    
+    all_features = []
+    all_positions = []
+    
+    for spot in hotspots:
+        feat = clip_engine.encode_text(spot["label"])  # Shape: (1, 512)
+        feat_tensor = torch.from_numpy(feat).float().squeeze(0)  # Shape: (512,)
+        
+        centroid = np.array(spot["centroid"])
+        for _ in range(100):
+            pos = centroid + np.random.normal(0, 0.1, 3)
+            # Add small feature noise to prevent perfect duplicate features
+            noise = torch.randn(512) * 0.02
+            noisy_feat = feat_tensor + noise
+            noisy_feat = noisy_feat / noisy_feat.norm(dim=-1, keepdim=True)
+            
+            all_features.append(noisy_feat)
+            all_positions.append(torch.tensor(pos, dtype=torch.float32))
+            
+    mock_data = {
+        "clip_features": torch.stack(all_features),
+        "positions": torch.stack(all_positions)
+    }
+    
+    os.makedirs(os.path.dirname(checkpoint_path), exist_ok=True)
+    torch.save(mock_data, checkpoint_path)
+
 @router.post("/search", response_model=SearchResult)
 async def search_scene(req: SearchQuery):
     if not check_rate_limit("client"):
@@ -38,15 +80,11 @@ async def search_scene(req: SearchQuery):
             if ckpt_files:
                 checkpoint_path = ckpt_files[0]
             else:
-                # If no checkpoints exist anywhere, create a mock default checkpoint to avoid system crash
+                # If no checkpoints exist anywhere, create a smart mock checkpoint to avoid system crash
                 os.makedirs("data/temp/default/output/point_cloud/iteration_30000", exist_ok=True)
                 checkpoint_path = "data/temp/default/output/point_cloud/iteration_30000/langsplat.ckpt"
                 if not os.path.exists(checkpoint_path):
-                    mock_data = {
-                        "clip_features": torch.randn(500, 512),
-                        "positions": torch.randn(500, 3)
-                    }
-                    torch.save(mock_data, checkpoint_path)
+                    create_smart_mock_checkpoint(checkpoint_path)
         
         # Load the checkpoint into the query engine
         langsplat_query.load_scene(checkpoint_path)
